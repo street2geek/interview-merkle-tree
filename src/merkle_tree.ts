@@ -77,7 +77,15 @@ export class MerkleTree {
     this.tree = JSON.parse(snap);
   }
 
-  // [level][index]
+  private createEmptyLeaves(): Buffer[] {
+    const leaves = [];
+    for (let i = 0; i < 1024; ++i) {
+      const v = Buffer.alloc(LEAF_BYTES, 0);
+      leaves[i] = v;
+    }
+    return leaves;
+  }
+
   private async createTree(): Promise<void> {
     const tree: ITree = {};
     const leaves = this.leaves.length ? this.leaves : [Buffer.alloc(0)];
@@ -96,7 +104,7 @@ export class MerkleTree {
       }
     }
 
-    console.log(tree);
+    if (this.depth < 32) console.log(tree);
     this.tree = tree;
     await this.db.put("snapshot", JSON.stringify(tree));
   }

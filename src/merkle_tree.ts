@@ -40,8 +40,12 @@ export class MerkleTree {
     }
 
     // Implement.
-    this.createTree();
-    this.root = root ?? this.tree[this.depth][0];
+    if (root) {
+      this.root = root;
+    } else {
+      this.createTree();
+      this.root = this.tree[this.depth][0];
+    }
   }
 
   /**
@@ -77,11 +81,10 @@ export class MerkleTree {
     this.tree = JSON.parse(snap);
   }
 
-  private createEmptyLeaves(): Buffer[] {
+  private createZeroLeaves(): Buffer[] {
     const leaves = [];
-    for (let i = 0; i < 1024; ++i) {
-      const v = Buffer.alloc(LEAF_BYTES, 0);
-      leaves[i] = v;
+    for (let i = 0; i < 2 ** this.depth; i++) {
+      leaves.push(Buffer.alloc(LEAF_BYTES, 0));
     }
     return leaves;
   }
@@ -104,7 +107,7 @@ export class MerkleTree {
       }
     }
 
-    if (this.depth < 32) console.log(tree);
+    console.log(tree);
     this.tree = tree;
     await this.db.put("snapshot", JSON.stringify(tree));
   }

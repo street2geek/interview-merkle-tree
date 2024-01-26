@@ -17,6 +17,8 @@ const LEAF_BYTES = 64; // All leaf values are 64 bytes.
 export class MerkleTree {
   private hasher = new Sha256Hasher();
   private root = Buffer.alloc(32);
+  private tree: ITree = {};
+  private leaves: Buffer[] = [];
 
   /**
    * Constructs a new MerkleTree instance, either initializing an empty tree, or restoring pre-existing state values.
@@ -38,9 +40,8 @@ export class MerkleTree {
     }
 
     // Implement.
-
-    // If root is not provided, construct a new tree.
-    this.root = root ?? this.createTree()[0][0];
+    this.createTree();
+    this.root = root ?? this.tree[this.depth][0];
   }
 
   /**
@@ -71,20 +72,15 @@ export class MerkleTree {
     }
   }
 
-  private createLeaves(): Buffer[] {
-    const leaves = [];
-    for (let i = 0; i < 4; ++i) {
-      const v = Buffer.alloc(LEAF_BYTES, 0);
-      v.writeUInt32LE(i, 0);
-      leaves[i] = v;
-    }
-    return leaves;
+  private async setTreeFromSnapshot(): Promise<void> {
+    const snap = await this.db.get("snapshot");
+    this.tree = JSON.parse(snap);
   }
 
   // [level][index]
-  private createTree(values?: Buffer[]): ITree {
+  private async createTree(): Promise<void> {
     const tree: ITree = {};
-    const leaves = values ?? this.createLeaves();
+    const leaves = this.leaves.length ? this.leaves : [Buffer.alloc(0)];
 
     for (let level = 0; level < this.depth; level++) {
       if (level === 0) {
@@ -101,8 +97,8 @@ export class MerkleTree {
     }
 
     console.log(tree);
-
-    return tree;
+    this.tree = tree;
+    await this.db.put("snapshot", JSON.stringify(tree));
   }
 
   getRoot() {
@@ -127,7 +123,9 @@ export class MerkleTree {
    */
   async updateElement(index: number, value: Buffer) {
     // Implement.
-
+    this.leaves[index] = value;
+    this.createTree();
+    this.root = this.tree[this.depth][0];
     return this.root;
   }
 }

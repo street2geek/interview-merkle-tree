@@ -1,6 +1,10 @@
-import { LevelUp, LevelUpChain } from 'levelup';
-import { HashPath } from './hash_path';
-import { Sha256Hasher } from './sha256_hasher';
+import { LevelUp, LevelUpChain } from "levelup";
+import { HashPath } from "./hash_path";
+import { Sha256Hasher } from "./sha256_hasher";
+
+interface ITree {
+  [level: number]: Buffer[];
+}
 
 const MAX_DEPTH = 32;
 const LEAF_BYTES = 64; // All leaf values are 64 bytes.
@@ -23,12 +27,20 @@ export class MerkleTree {
    * @param depth The depth of the tree, to be no greater than MAX_DEPTH.
    * @param root When restoring, you need to provide the root.
    */
-  constructor(private db: LevelUp, private name: string, private depth: number, root?: Buffer) {
+  constructor(
+    private db: LevelUp,
+    private name: string,
+    private depth: number,
+    root?: Buffer
+  ) {
     if (!(depth >= 1 && depth <= MAX_DEPTH)) {
-      throw Error('Bad depth');
+      throw Error("Bad depth");
     }
 
     // Implement.
+
+    // If root is not provided, construct a new tree.
+    this.root = root ?? this.createTree()[0][0];
   }
 
   /**
@@ -59,6 +71,40 @@ export class MerkleTree {
     }
   }
 
+  private createLeaves(): Buffer[] {
+    const leaves = [];
+    for (let i = 0; i < 4; ++i) {
+      const v = Buffer.alloc(LEAF_BYTES, 0);
+      v.writeUInt32LE(i, 0);
+      leaves[i] = v;
+    }
+    return leaves;
+  }
+
+  // [level][index]
+  private createTree(values?: Buffer[]): ITree {
+    const tree: ITree = {};
+    const leaves = values ?? this.createLeaves();
+
+    for (let level = 0; level < this.depth; level++) {
+      if (level === 0) {
+        tree[level] = leaves.map((leaf) => this.hasher.hash(leaf));
+      }
+      const layerSize = tree[level].length;
+      tree[level + 1] = [];
+      for (let i = 0; i < layerSize; i += 2) {
+        const left = tree[level][i];
+        const right = i + 1 < layerSize ? tree[level][i + 1] : Buffer.alloc(0);
+        const node = this.hasher.compress(left, right);
+        tree[level + 1].push(node);
+      }
+    }
+
+    console.log(tree);
+
+    return tree;
+  }
+
   getRoot() {
     return this.root;
   }
@@ -81,6 +127,7 @@ export class MerkleTree {
    */
   async updateElement(index: number, value: Buffer) {
     // Implement.
+
     return this.root;
   }
 }

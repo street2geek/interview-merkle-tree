@@ -43,7 +43,8 @@ export class MerkleTree {
     if (root) {
       this.root = root;
     } else {
-      this.createTree();
+      this.leaves = this.createZeroLeaves();
+      this.createTreeObject();
       this.root = this.tree[this.depth][0];
     }
   }
@@ -83,13 +84,13 @@ export class MerkleTree {
 
   private createZeroLeaves(): Buffer[] {
     const leaves = [];
-    for (let i = 0; i < 2 ** this.depth; i++) {
+    for (let i = 0; i < this.depth; i++) {
       leaves.push(Buffer.alloc(LEAF_BYTES, 0));
     }
     return leaves;
   }
 
-  private async createTree(): Promise<void> {
+  private async createTreeObject(): Promise<void> {
     const tree: ITree = {};
     const leaves = this.leaves.length ? this.leaves : [Buffer.alloc(0)];
 
@@ -110,6 +111,11 @@ export class MerkleTree {
     console.log(tree);
     this.tree = tree;
     await this.db.put("snapshot", JSON.stringify(tree));
+  }
+
+  private reCreateTree(): void {
+    this.createTreeObject();
+    this.root = this.tree[this.depth][0];
   }
 
   getRoot() {
@@ -135,8 +141,7 @@ export class MerkleTree {
   async updateElement(index: number, value: Buffer) {
     // Implement.
     this.leaves[index] = value;
-    this.createTree();
-    this.root = this.tree[this.depth][0];
+    this.reCreateTree();
     return this.root;
   }
 }

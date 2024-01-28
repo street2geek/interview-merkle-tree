@@ -17,9 +17,10 @@ const LEAF_BYTES = 64; // All leaf values are 64 bytes.
 export class MerkleTree {
   private hasher = new Sha256Hasher();
   private root = Buffer.alloc(32);
+  private leaves: Buffer[] = [];
   private treeObject: ITree = {};
   private zeroHashes: Buffer[] = [];
-  private leaves: Buffer[] = [];
+  private nodeMap: Map<string, Buffer> = new Map();
 
   /**
    * Constructs a new MerkleTree instance, either initializing an empty tree, or restoring pre-existing state values.
@@ -45,10 +46,11 @@ export class MerkleTree {
     if (root) {
       this.root = root;
     } else {
-      this.zeroHashes = this.createZeroHashes();
-      this.leaves = leaves || [];
+      if (leaves?.length) {
+        this.leaves = leaves;
+      }
       this.createTreeObject();
-      this.root = this.treeObject[this.depth][0];
+      this.zeroHashes = this.createZeroHashes();
     }
   }
 
@@ -85,22 +87,10 @@ export class MerkleTree {
     this.treeObject = JSON.parse(snap);
   }
 
-  private createZeroHashes(): Buffer[] {
-    let currentHash = this.hasher.hash(Buffer.alloc(LEAF_BYTES, 0));
-    const hashList = [currentHash];
-    for (let i = 0; i < this.depth; i++) {
-      currentHash = this.hasher.compress(currentHash, currentHash);
-      hashList.push(currentHash);
-    }
-
-    console.log(hashList);
-    return hashList;
-  }
-
   // create dictionary of tree, where key is level and value is array of nodes
   private async createTreeObject(): Promise<void> {
     const tree: ITree = {};
-    const leaves = this.leaves?.length ? this.leaves : [Buffer.alloc(0)];
+    const leaves = this.leaves.length ? this.leaves : this.zeroHashes;
 
     for (let level = 0; level < this.depth; level++) {
       if (level === 0) {
@@ -120,13 +110,53 @@ export class MerkleTree {
     await this.db.put("snapshot", JSON.stringify(tree));
   }
 
+  // update leaf in the tree
+  private appendTreeObject(index: number, value: Buffer): void {
+    this.leaves[index] = value;
+    this.reCreateTree();
+  }
+
   private reCreateTree(): void {
     this.createTreeObject();
     this.root = this.treeObject[this.depth][0];
   }
 
+  private createZeroHashes(): Buffer[] {
+    let currentHash = this.hasher.hash(Buffer.alloc(LEAF_BYTES, 0));
+    const hashList = [currentHash];
+    for (let i = 0; i < this.depth; i++) {
+      currentHash = this.hasher.compress(currentHash, currentHash);
+      hashList.push(currentHash);
+    }
+
+    return hashList;
+  }
+
+  // sets hashed node in nodeMap
+  private appendNodeMap(index: number, value: Buffer): void {
+    let currentIndex = index;
+    let currentHash = this.hasher.hash(value);
+    for (let level = this.depth; level > 0; level--) {
+      this.setNode(level, currentIndex, currentHash);
+      const altHash = this.zeroHashes[this.depth - level];
+      if (index % 2 === 1) {
+        const left = this.nodeMap.get(`${level}-${index - 1}`) || altHash;
+        currentHash = this.hasher.compress(left, currentHash);
+      } else {
+        const right = this.nodeMap.get(`${level}-${index + 1}`) || altHash;
+        currentHash = this.hasher.compress(currentHash, right);
+      }
+      currentIndex = Math.floor(currentIndex / 2);
+    }
+    this.setNode(0, 0, currentHash);
+  }
+
+  setNode(level: number, index: number, value: Buffer): void {
+    this.nodeMap.set(`${level}-${index}`, value);
+  }
+
   getRoot() {
-    return this.root;
+    return this.nodeMap.get(`0-0`) || this.root;
   }
 
   /**
@@ -147,8 +177,8 @@ export class MerkleTree {
    */
   async updateElement(index: number, value: Buffer) {
     // Implement.
-    this.leaves[index] = value;
-    this.reCreateTree();
+    this.appendTreeObject(index, value);
+    // this.appendNodeMap(index, value);
     return this.root;
   }
 }

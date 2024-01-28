@@ -17,8 +17,8 @@ const LEAF_BYTES = 64; // All leaf values are 64 bytes.
 export class MerkleTree {
   private hasher = new Sha256Hasher();
   private root = Buffer.alloc(32);
-  private tree: ITree = {};
-  private leaves: Buffer[] = [];
+  private treeObject: ITree = {};
+  private zeroHashes: Buffer[] = [];
 
   /**
    * Constructs a new MerkleTree instance, either initializing an empty tree, or restoring pre-existing state values.
@@ -33,6 +33,7 @@ export class MerkleTree {
     private db: LevelUp,
     private name: string,
     private depth: number,
+    private leaves?: Buffer[],
     root?: Buffer
   ) {
     if (!(depth >= 1 && depth <= MAX_DEPTH)) {
@@ -43,9 +44,9 @@ export class MerkleTree {
     if (root) {
       this.root = root;
     } else {
-      this.leaves = this.createZeroLeaves();
+      this.zeroHashes = this.createZeroHashes();
       this.createTreeObject();
-      this.root = this.tree[this.depth][0];
+      this.root = this.treeObject[this.depth][0];
     }
   }
 
@@ -79,20 +80,25 @@ export class MerkleTree {
 
   private async setTreeFromSnapshot(): Promise<void> {
     const snap = await this.db.get("snapshot");
-    this.tree = JSON.parse(snap);
+    this.treeObject = JSON.parse(snap);
   }
 
-  private createZeroLeaves(): Buffer[] {
-    const leaves = [];
+  private createZeroHashes(): Buffer[] {
+    let currentHash = this.hasher.hash(Buffer.alloc(LEAF_BYTES, 0));
+    const hashList = [currentHash];
     for (let i = 0; i < this.depth; i++) {
-      leaves.push(Buffer.alloc(LEAF_BYTES, 0));
+      currentHash = this.hasher.compress(currentHash, currentHash);
+      hashList.push(currentHash);
     }
-    return leaves;
+
+    console.log(hashList);
+    return hashList;
   }
 
+  // create dictionary of tree, where key is level and value is array of nodes
   private async createTreeObject(): Promise<void> {
     const tree: ITree = {};
-    const leaves = this.leaves.length ? this.leaves : [Buffer.alloc(0)];
+    const leaves = this.leaves?.length ? this.leaves : [Buffer.alloc(0)];
 
     for (let level = 0; level < this.depth; level++) {
       if (level === 0) {
@@ -108,14 +114,13 @@ export class MerkleTree {
       }
     }
 
-    console.log(tree);
-    this.tree = tree;
+    this.treeObject = tree;
     await this.db.put("snapshot", JSON.stringify(tree));
   }
 
   private reCreateTree(): void {
     this.createTreeObject();
-    this.root = this.tree[this.depth][0];
+    this.root = this.treeObject[this.depth][0];
   }
 
   getRoot() {

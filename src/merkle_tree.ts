@@ -19,6 +19,7 @@ export class MerkleTree {
   private root = Buffer.alloc(32);
   private treeObject: ITree = {};
   private zeroHashes: Buffer[] = [];
+  private leaves: Buffer[] = [];
 
   /**
    * Constructs a new MerkleTree instance, either initializing an empty tree, or restoring pre-existing state values.
@@ -33,8 +34,8 @@ export class MerkleTree {
     private db: LevelUp,
     private name: string,
     private depth: number,
-    private leaves?: Buffer[],
-    root?: Buffer
+    root?: Buffer,
+    leaves?: Buffer[]
   ) {
     if (!(depth >= 1 && depth <= MAX_DEPTH)) {
       throw Error("Bad depth");
@@ -45,6 +46,7 @@ export class MerkleTree {
       this.root = root;
     } else {
       this.zeroHashes = this.createZeroHashes();
+      this.leaves = leaves || [];
       this.createTreeObject();
       this.root = this.treeObject[this.depth][0];
     }

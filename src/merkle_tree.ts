@@ -111,7 +111,8 @@ export class MerkleTree {
       tree[level + 1] = [];
       for (let i = 0; i < layerSize; i += 2) {
         const left = tree[level][i];
-        const right = i + 1 < layerSize ? tree[level][i + 1] : Buffer.alloc(0);
+        const right =
+          i + 1 < layerSize ? tree[level][i + 1] : this.zeroHashes[level];
         const node = this.hasher.compress(left, right);
         tree[level + 1].push(node);
       }

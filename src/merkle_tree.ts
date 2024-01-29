@@ -50,8 +50,7 @@ export class MerkleTree {
         this.leaves = leaves;
       }
       this.zeroHashes = this.createZeroHashes();
-      this.createTreeObject();
-      this.root = this.treeObject[this.depth][0];
+      this.root = this.zeroHashes[this.depth];
     }
   }
 

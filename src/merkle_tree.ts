@@ -118,15 +118,16 @@ export class MerkleTree {
     //console.log("tree", tree);
   }
 
-  // update leaf in the tree
-  private appendTreeObject(index: number, value: Buffer): void {
-    this.leaves[index] = value;
-    this.reCreateTree();
-  }
-
-  private reCreateTree(): void {
+  private async reCreateTree(): Promise<void> {
     this.createTreeObject();
     this.root = this.treeObject[this.depth][0];
+    await this.writeMetaData();
+  }
+
+  // update leaf in the tree
+  private async appendTreeObject(index: number, value: Buffer): Promise<void> {
+    this.leaves[index] = value;
+    await this.reCreateTree();
   }
 
   // sets hashed node in nodeMap
@@ -180,7 +181,7 @@ export class MerkleTree {
    */
   async updateElement(index: number, value: Buffer) {
     // Implement.
-    this.appendTreeObject(index, value);
+    await this.appendTreeObject(index, value);
     // this.appendNodeMap(index, value);
     return this.root;
   }

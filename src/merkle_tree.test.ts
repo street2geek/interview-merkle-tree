@@ -74,19 +74,13 @@ describe("merkle_tree", () => {
       await tree.updateElement(i, values[i]);
     }
 
-    console.log("snapshot", await tree.getRootFromSnapshot());
-    console.log("tree", await tree.getRoot());
-
     const db2 = levelup(levelDown);
     const tree2 = await MerkleTree.new(db2, "test");
-
-    console.log("snapshot2", await tree2.getRootFromSnapshot());
-    console.log("tree2", await tree2.getRoot());
 
     expect(tree.getRoot().toString("hex")).toBe(
       "4b8404d05a963de56f7212fbf8123204b1eb77a4cb16ae3875679a898aaa5daa"
     );
-    // expect(tree.getRoot()).toEqual(tree2.getRoot());
+    expect(tree.getRoot()).toEqual(tree2.getRoot());
     /* for (let i = 0; i < 128; ++i) {
       expect(await tree.getHashPath(i)).toEqual(await tree2.getHashPath(i));
     } */

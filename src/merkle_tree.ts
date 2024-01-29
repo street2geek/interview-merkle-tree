@@ -125,29 +125,6 @@ export class MerkleTree {
     await this.reCreateTree();
   }
 
-  // sets hashed node in nodeMap
-  /*   private appendNodeMap(index: number, value: Buffer): void {
-    let currentIndex = index;
-    let currentHash = this.hasher.hash(value);
-    for (let level = this.depth; level > 0; level--) {
-      this.setNode(level, currentIndex, currentHash);
-      const altHash = this.zeroHashes[this.depth - level];
-      if (index % 2 === 1) {
-        const left = this.nodeMap.get(`${level}-${index - 1}`) || altHash;
-        currentHash = this.hasher.compress(left, currentHash);
-      } else {
-        const right = this.nodeMap.get(`${level}-${index + 1}`) || altHash;
-        currentHash = this.hasher.compress(currentHash, right);
-      }
-      currentIndex = Math.floor(currentIndex / 2);
-    }
-    this.setNode(0, 0, currentHash);
-  }
-
-  private setNode(level: number, index: number, value: Buffer): void {
-    this.nodeMap.set(`${level}-${index}`, value);
-  } */
-
   async getRootFromSnapshot(): Promise<Buffer> {
     const snapshot = await this.db.get(this.name);
     return snapshot;

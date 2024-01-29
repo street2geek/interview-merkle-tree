@@ -35,8 +35,7 @@ export class MerkleTree {
     private db: LevelUp,
     private name: string,
     private depth: number,
-    root?: Buffer,
-    leaves?: Buffer[]
+    root?: Buffer
   ) {
     if (!(depth >= 1 && depth <= MAX_DEPTH)) {
       throw Error("Bad depth");
@@ -46,9 +45,6 @@ export class MerkleTree {
     if (root) {
       this.root = root;
     } else {
-      if (leaves?.length) {
-        this.leaves = leaves;
-      }
       this.zeroHashes = this.createZeroHashes();
       this.root = this.zeroHashes[this.depth];
     }

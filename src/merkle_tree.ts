@@ -87,6 +87,17 @@ export class MerkleTree {
     this.treeObject = JSON.parse(snap);
   }
 
+  private createZeroHashes(): Buffer[] {
+    let currentHash = this.hasher.hash(Buffer.alloc(LEAF_BYTES, 0));
+    const hashList = [currentHash];
+    for (let i = 0; i < this.depth; i++) {
+      currentHash = this.hasher.compress(currentHash, currentHash);
+      hashList.push(currentHash);
+    }
+
+    return hashList;
+  }
+
   // create dictionary of tree, where key is level and value is array of nodes
   private async createTreeObject(): Promise<void> {
     const tree: ITree = {};
@@ -119,17 +130,6 @@ export class MerkleTree {
   private reCreateTree(): void {
     this.createTreeObject();
     this.root = this.treeObject[this.depth][0];
-  }
-
-  private createZeroHashes(): Buffer[] {
-    let currentHash = this.hasher.hash(Buffer.alloc(LEAF_BYTES, 0));
-    const hashList = [currentHash];
-    for (let i = 0; i < this.depth; i++) {
-      currentHash = this.hasher.compress(currentHash, currentHash);
-      hashList.push(currentHash);
-    }
-
-    return hashList;
   }
 
   // sets hashed node in nodeMap

@@ -14,14 +14,14 @@ describe("merkle_tree", () => {
     }
   });
 
-  /*  it("should have correct empty tree root for depth 32", async () => {
+  it("should have correct empty tree root for depth 32", async () => {
     const db = levelup(memdown());
     const tree = await MerkleTree.new(db, "test", 32);
     const root = tree.getRoot();
     expect(root.toString("hex")).toEqual(
       "1c9a7e5ff1cf48b4ad1582d3f4e4a1004f3b20d8c5a2b71387a4254ad933ebc5"
     );
-  }); */
+  });
 
   it("should have correct root", async () => {
     const db = levelup(memdown());

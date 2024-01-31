@@ -121,7 +121,7 @@ export class MerkleTree {
   }
 
   // update leaf in the tree
-  private async appendTreeObject(index: number, value: Buffer): Promise<void> {
+  private async updateLeaves(index: number, value: Buffer): Promise<void> {
     this.leaves[index] = value;
     await this.reCreateTree();
   }
@@ -168,7 +168,7 @@ export class MerkleTree {
    */
   async updateElement(index: number, value: Buffer) {
     // Implement.
-    await this.appendTreeObject(index, value);
+    await this.updateLeaves(index, value);
     return this.root;
   }
 }

@@ -1,7 +1,6 @@
 import { LevelUp, LevelUpChain } from "levelup";
 import { HashPath } from "./hash_path";
 import { Sha256Hasher } from "./sha256_hasher";
-import { bufferReviver } from "./utils";
 import { saveTreeSnapshot, restoreTree } from "./utils/db";
 
 export interface ITree {

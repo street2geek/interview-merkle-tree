@@ -47,6 +47,7 @@ export class MerkleTree {
     if (root) {
       this.root = root;
     } else {
+      // no leaves exist yet so simply set root as the root zero hash at the given depth.
       this.root = this.zeroHashes[this.depth];
     }
   }
@@ -90,7 +91,7 @@ export class MerkleTree {
     return hashList;
   }
 
-  /** Create dictionary of tree, where key is level and value is array of nodes */
+  /** Create dictionary of tree, where key is level and value is array of nodes. */
   private createTreeObject(): void {
     const tree: ITree = {};
     const leaves = this.leaves;
@@ -114,21 +115,33 @@ export class MerkleTree {
     //console.log("tree", tree);
   }
 
-  /** Updates leaves and rehashes the tree */
+  /** Updates leaves and rehashes the tree. */
   private async updateTree(index: number, value: Buffer): Promise<void> {
     this.leaves[index] = value;
     // recreate tree
     this.createTreeObject();
     this.root = this.treeObject[this.depth][0];
+    // rewrite meta data
     await this.writeMetaData();
+    // attempt to save snapshot, weirdness with levelup.
+    await this.saveTreeSnapshot();
+  }
+
+  private async saveTreeSnapshot() {
+    await this.db.put("treeSnapshot", this.treeObject);
+    // await this.db.batch().put("treeSnapshot", this.treeObject).write();
+  }
+
+  private async restoreTree(): Promise<void> {
+    const snapshot = await this.db.get("treeSnapshot");
+    console.log("snapshot", snapshot);
+    if (snapshot) {
+      this.treeObject = snapshot;
+      this.leaves = this.treeObject[0];
+    }
   }
 
   // Public methods below.
-
-  async getRootFromSnapshot(): Promise<Buffer> {
-    const snapshot = await this.db.get(this.name);
-    return snapshot;
-  }
 
   getRoot() {
     return this.root;
@@ -143,12 +156,15 @@ export class MerkleTree {
    *     d3:   [ ]         [ ]          [*]         [*]           [ ]         [ ]          [ ]        [ ]
    */
   async getHashPath(index: number): Promise<HashPath> {
+    if (!this.treeObject[0]) {
+      await this.restoreTree();
+    }
     // Implement.
     let currentIndex = index;
     const siblings = [];
     for (let level = 0; level < this.depth; level++) {
       const node = this.treeObject[level][currentIndex];
-      // if node is even, then sibling is to the right, else to the left
+      // if node is even, then sibling is to the right, else to the left.
       if (currentIndex % 2 === 0) {
         const sibling =
           this.treeObject[level][currentIndex + 1] || this.zeroHashes[level];

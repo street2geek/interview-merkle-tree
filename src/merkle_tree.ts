@@ -101,13 +101,15 @@ export class MerkleTree {
         tree[level] = leaves.map((leaf) => this.hasher.hash(leaf));
       }
       const layerSize = tree[level].length;
-      tree[level + 1] = [];
+      const nextLevel = level + 1;
+      // assign empty array to next level
+      tree[nextLevel] = [];
       for (let i = 0; i < layerSize; i += 2) {
         const left = tree[level][i];
         const right =
           i + 1 < layerSize ? tree[level][i + 1] : this.zeroHashes[level];
         const node = this.hasher.compress(left, right);
-        tree[level + 1].push(node);
+        tree[nextLevel].push(node);
       }
     }
 

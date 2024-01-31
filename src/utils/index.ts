@@ -10,7 +10,7 @@ export const bufferReviver = (
     "data" in v &&
     Array.isArray(v.data)
   ) {
-    return new Buffer(v.data);
+    return Buffer.from(v.data);
   }
   return v;
 };

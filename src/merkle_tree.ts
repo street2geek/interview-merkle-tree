@@ -127,11 +127,12 @@ export class MerkleTree {
     // await this.saveTreeSnapshot();
   }
 
-  private async saveHashPathSnapshot(hashPathBuffer: Buffer) {
+  private async saveHashPathSnapshot(hashPathBuffer: Buffer): Promise<void> {
     await this.db.put("hashPathSnapshot", hashPathBuffer);
     // await this.db.batch().put("hashPathSnapshot", this.hashPathBuffer).write();
   }
 
+  /** returns hash path buffer from in memory data store */
   private async restoreHashPath(): Promise<Buffer> {
     let snapshot;
     try {

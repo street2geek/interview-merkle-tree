@@ -1,7 +1,7 @@
-import levelup, { LevelUp } from "levelup";
+import { LevelUp } from "levelup";
 
-import { bufferReviver } from ".";
 import { ITree } from "..";
+import { bufferReviver } from ".";
 
 export async function saveTreeSnapshot(
   db: LevelUp,

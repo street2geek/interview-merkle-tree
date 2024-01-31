@@ -81,9 +81,9 @@ describe("merkle_tree", () => {
       "4b8404d05a963de56f7212fbf8123204b1eb77a4cb16ae3875679a898aaa5daa"
     );
     expect(tree.getRoot()).toEqual(tree2.getRoot());
-    /*  for (let i = 0; i < 128; ++i) {
+    for (let i = 0; i < 128; ++i) {
       expect(await tree.getHashPath(i)).toEqual(await tree2.getHashPath(i));
-    } */
+    }
   });
 
   it("should have correct results inserting 1024 values into 32 depth tree.", async () => {

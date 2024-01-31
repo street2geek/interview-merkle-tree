@@ -123,22 +123,25 @@ export class MerkleTree {
     this.root = this.treeObject[this.depth][0];
     // rewrite meta data
     await this.writeMetaData();
-    // attempt to save snapshot, weirdness with levelup.
-    await this.saveTreeSnapshot();
+    // attempted to save snapshot, weirdness with levelup.
+    // await this.saveTreeSnapshot();
   }
 
-  private async saveTreeSnapshot() {
-    await this.db.put("treeSnapshot", this.treeObject);
-    // await this.db.batch().put("treeSnapshot", this.treeObject).write();
+  private async saveHashPathSnapshot(hashPathBuffer: Buffer) {
+    await this.db.put("hashPathSnapshot", hashPathBuffer);
+    // await this.db.batch().put("hashPathSnapshot", this.hashPathBuffer).write();
   }
 
-  private async restoreTree(): Promise<void> {
-    const snapshot = await this.db.get("treeSnapshot");
-    console.log("snapshot", snapshot);
-    if (snapshot) {
-      this.treeObject = snapshot;
-      this.leaves = this.treeObject[0];
+  private async restoreHashPath(): Promise<Buffer> {
+    let snapshot;
+    try {
+      snapshot = await this.db.get("hashPathSnapshot");
+      // console.log("snapshot", snapshot);
+    } catch (e) {
+      console.log("error", e);
     }
+
+    return snapshot;
   }
 
   // Public methods below.
@@ -157,7 +160,8 @@ export class MerkleTree {
    */
   async getHashPath(index: number): Promise<HashPath> {
     if (!this.treeObject[0]) {
-      await this.restoreTree();
+      const hashPathFromDB = await this.restoreHashPath();
+      return HashPath.fromBuffer(hashPathFromDB);
     }
     // Implement.
     let currentIndex = index;
@@ -174,8 +178,10 @@ export class MerkleTree {
       }
       currentIndex = Math.floor(currentIndex / 2);
     }
-    // console.log("siblings", siblings);
-    return new HashPath(siblings);
+
+    const hashPath = new HashPath(siblings);
+    await this.saveHashPathSnapshot(hashPath.toBuffer());
+    return hashPath;
   }
 
   /**

@@ -1,6 +1,7 @@
 import { LevelUp, LevelUpChain } from "levelup";
 import { HashPath } from "./hash_path";
 import { Sha256Hasher } from "./sha256_hasher";
+import { bufferReviver } from "./utils";
 
 interface ITree {
   [level: number]: Buffer[];
@@ -125,8 +126,28 @@ export class MerkleTree {
     this.root = this.treeObject[this.depth][0];
     // rewrite meta data
     await this.writeMetaData();
-    // attempted to save snapshot, weirdness with levelup.
-    // await this.saveTreeSnapshot();
+    await this.saveTreeSnapshot();
+  }
+
+  // TODO: abtract snapshotting / save and restore functionality to db utils
+
+  private async saveTreeSnapshot(): Promise<void> {
+    const data = Buffer.from(JSON.stringify(this.treeObject));
+    await this.db.put("treeSnap", data);
+  }
+
+  /** returns tree object buffer from in memory data store */
+  private async restoreTree(): Promise<ITree> {
+    let snapshot: ITree = {};
+    try {
+      const data = await this.db.get("treeSnap");
+      snapshot = JSON.parse(data, bufferReviver);
+      // console.log("snapshot", snapshot);
+    } catch (e) {
+      console.log("error", e);
+    }
+
+    return snapshot;
   }
 
   private async saveHashPathSnapshot(hashPathBuffer: Buffer): Promise<void> {
@@ -163,8 +184,7 @@ export class MerkleTree {
    */
   async getHashPath(index: number): Promise<HashPath> {
     if (!this.treeObject[0]) {
-      const hashPathFromDB = await this.restoreHashPath();
-      return HashPath.fromBuffer(hashPathFromDB);
+      this.treeObject = await this.restoreTree();
     }
     // Implement.
     let currentIndex = index;
@@ -183,7 +203,6 @@ export class MerkleTree {
     }
 
     const hashPath = new HashPath(siblings);
-    await this.saveHashPathSnapshot(hashPath.toBuffer());
     return hashPath;
   }
 

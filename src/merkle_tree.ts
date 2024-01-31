@@ -90,7 +90,7 @@ export class MerkleTree {
     return hashList;
   }
 
-  // create dictionary of tree, where key is level and value is array of nodes
+  /** Create dictionary of tree, where key is level and value is array of nodes */
   private createTreeObject(): void {
     const tree: ITree = {};
     const leaves = this.leaves;
@@ -114,17 +114,16 @@ export class MerkleTree {
     //console.log("tree", tree);
   }
 
-  private async reCreateTree(): Promise<void> {
+  /** Updates leaves and rehashes the tree */
+  private async updateTree(index: number, value: Buffer): Promise<void> {
+    this.leaves[index] = value;
+    // recreate tree
     this.createTreeObject();
     this.root = this.treeObject[this.depth][0];
     await this.writeMetaData();
   }
 
-  // update leaf in the tree
-  private async updateLeaves(index: number, value: Buffer): Promise<void> {
-    this.leaves[index] = value;
-    await this.reCreateTree();
-  }
+  // Public methods below.
 
   async getRootFromSnapshot(): Promise<Buffer> {
     const snapshot = await this.db.get(this.name);
@@ -168,7 +167,7 @@ export class MerkleTree {
    */
   async updateElement(index: number, value: Buffer) {
     // Implement.
-    await this.updateLeaves(index, value);
+    await this.updateTree(index, value);
     return this.root;
   }
 }

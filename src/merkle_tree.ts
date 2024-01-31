@@ -42,10 +42,11 @@ export class MerkleTree {
     }
 
     // Implement.
+    this.zeroHashes = this.createZeroHashes();
+
     if (root) {
       this.root = root;
     } else {
-      this.zeroHashes = this.createZeroHashes();
       this.root = this.zeroHashes[this.depth];
     }
   }
@@ -90,9 +91,9 @@ export class MerkleTree {
   }
 
   // create dictionary of tree, where key is level and value is array of nodes
-  private async createTreeObject(): Promise<void> {
+  private createTreeObject(): void {
     const tree: ITree = {};
-    const leaves = this.leaves.length ? this.leaves : this.zeroHashes;
+    const leaves = this.leaves;
 
     for (let level = 0; level < this.depth; level++) {
       if (level === 0) {
@@ -131,7 +132,6 @@ export class MerkleTree {
   }
 
   getRoot() {
-    // return this.nodeMap.get(`0-0`);
     return this.root;
   }
 
@@ -143,9 +143,24 @@ export class MerkleTree {
    *     d2:         [*]                      [*]                       [ ]                     [ ]
    *     d3:   [ ]         [ ]          [*]         [*]           [ ]         [ ]          [ ]        [ ]
    */
-  async getHashPath(index: number) {
+  async getHashPath(index: number): Promise<HashPath> {
     // Implement.
-    return new HashPath();
+    let currentIndex = index;
+    const siblings = [];
+    for (let level = 0; level < this.depth; level++) {
+      const node = this.treeObject[level][currentIndex];
+      // if node is even, then sibling is to the right, else to the left
+      if (currentIndex % 2 === 0) {
+        const sibling =
+          this.treeObject[level][currentIndex + 1] || this.zeroHashes[level];
+        siblings.push([node, sibling]);
+      } else {
+        siblings.push([this.treeObject[level][currentIndex - 1], node]);
+      }
+      currentIndex = Math.floor(currentIndex / 2);
+    }
+    // console.log("siblings", siblings);
+    return new HashPath(siblings);
   }
 
   /**
@@ -154,7 +169,6 @@ export class MerkleTree {
   async updateElement(index: number, value: Buffer) {
     // Implement.
     await this.appendTreeObject(index, value);
-    // this.appendNodeMap(index, value);
     return this.root;
   }
 }
